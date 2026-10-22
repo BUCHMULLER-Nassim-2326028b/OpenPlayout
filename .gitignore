@@ -1,0 +1,15 @@
+.venv/
+.venv312/
+.tools/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+.env
+data/
+*.db
+*.db-*
+.ruff_cache/
+*.tsbuildinfo
+media/

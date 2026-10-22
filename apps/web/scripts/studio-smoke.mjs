@@ -1,0 +1,36 @@
+import {chromium} from 'playwright-core';
+import {mkdir} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+const errors=[];
+try{
+ const context=await browser.newContext({viewport:{width:1500,height:1000}});
+ await context.addInitScript(token=>sessionStorage.setItem('openplayout-token',token),process.env.OPENPLAYOUT_TOKEN);
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ const root=process.env.OPENPLAYOUT_URL,artifacts=process.env.OPENPLAYOUT_ARTIFACTS;
+ await mkdir(artifacts,{recursive:true});
+ await page.goto(root+'/chapters');
+ await page.getByRole('heading',{name:'Chapters & virtual segments'}).waitFor();
+ await page.getByLabel('Source video',{exact:true}).selectOption(process.env.OPENPLAYOUT_PROGRAM_ID);
+ await page.locator('video').waitFor();
+ await page.getByLabel('Label',{exact:true}).fill('Browser chapter');
+ await page.getByLabel('IN frame',{exact:true}).fill('25');await page.getByLabel('OUT frame',{exact:true}).fill('50');
+ await page.getByRole('button',{name:'Save chapter',exact:true}).click();
+ await page.getByText('Chapter saved',{exact:true}).waitFor();
+ await page.screenshot({path:artifacts+'/chapters.png',fullPage:true});
+ await page.getByRole('link',{name:'Automation studio',exact:true}).click();
+ await page.getByRole('heading',{name:'Automation studio',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Segment break resume',exact:false}).click();
+ await page.getByRole('button',{name:'Generate preview',exact:true}).click();
+ await page.getByRole('button',{name:'Run on program output',exact:true}).waitFor();
+ await page.screenshot({path:artifacts+'/studio.png',fullPage:true});
+ await page.getByRole('button',{name:'Graphics',exact:true}).click();
+ await page.getByRole('button',{name:'Browser preview',exact:true}).first().click();
+ const overlay=page.frameLocator('iframe[title="Overlay browser preview"]');
+ await overlay.locator('#title').getByText('OPENPLAYOUT LIVE',{exact:true}).waitFor();
+ await page.screenshot({path:artifacts+'/graphics.png',fullPage:true});
+ await page.getByRole('button',{name:'Operations',exact:true}).click();
+ await page.getByRole('heading',{name:'Operator diagnostics',exact:true}).waitFor();
+ await page.screenshot({path:artifacts+'/operations.png',fullPage:true});
+ if(errors.length)throw Error(errors.join('\n'));
+ console.log('Chapters, sequence preview, HTML rendering and diagnostics browser checks passed');
+}finally{await browser.close();}

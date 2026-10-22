@@ -91,8 +91,8 @@ function Dashboard() {
   const locked = !!status?.current || !!status?.automation || edit.isPending;
   const observation = status?.observation;
   const connected = observation?.connected;
-  const position = observation?.position_seconds;
-  const duration = observation?.duration_seconds;
+  const position = observation?.position_seconds == null ? null : Math.max(0,observation.position_seconds-(observation.clip_in_seconds||0));
+  const duration = observation?.clip_duration_seconds ?? observation?.duration_seconds;
   const order = (from: number, to: number) => {if (from !== to) edit.mutate({path: '/playlists/main/order', method: 'PUT', body: {item_ids: arrayMove(rows, from, to).map(r => r.id)}});};
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {

@@ -109,6 +109,12 @@ def test_rules_repeated_groups_breaks_fill_exact_deadline(harness):
     result = response.json()
     assert result['duration_frames'] == 1250 and result['unused_frames']==0
     assert [bool(i.get('break_id')) for i in result['items']] == [False,False,True,False,False]
+    created=client.post(f'/api/resources/{rule}/schedule',json={'start_at':now.isoformat(),'deadline':(now+timedelta(seconds=50)).isoformat(),'strict':True,'signature':result['signature']})
+    assert created.status_code==200,created.text
+    schedule=client.get('/api/schedules/'+created.json()['id']).json()
+    assert schedule['valid'] and len(schedule['events'])==5
+    assert datetime.fromisoformat(schedule['events'][-1]['planned_end'])<=now+timedelta(seconds=50)
+    assert client.get('/api/status').json()['scheduler']['armed_schedule_id'] is None
     assert client.post(f'/api/resources/{rule}/preview',json={'target_seconds':'49','strict':True}).status_code == 400
 
 
@@ -181,6 +187,7 @@ def test_plugin_failure_isolated_from_playout(harness):
 
 def test_backup_integrity_config_round_trip_and_recovery_expected_position(harness,tmp_path):
     client,app,_,root=harness
+    app.state.recovery.last_checkpoint=time.monotonic()+60
     media=add_asset(app,root)
     client.post('/api/playlists/main/items',json={'media_id':media})
     client.post('/api/playout',json={'action':'connect'})
@@ -201,6 +208,14 @@ def test_backup_integrity_config_round_trip_and_recovery_expected_position(harne
     with sqlite3.connect(database) as db:
         assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
         assert db.execute('SELECT count(*) FROM media_assets').fetchone()[0]==1
+    import subprocess
+    import sys
+    from app.config import ROOT
+    archive_path=tmp_path/'backup.zip';archive_path.write_bytes(data)
+    restored=tmp_path/'restored-data'
+    subprocess.run([sys.executable,str(ROOT/'scripts/restore_backup.py'),str(archive_path),'--data-dir',str(restored),'--confirm-stopped'],check=True,capture_output=True)
+    with sqlite3.connect(restored/'openplayout.db') as db:
+        assert db.execute('SELECT count(*) FROM playlist_items').fetchone()[0]==1
     cfg=client.get('/api/configuration/export').json()
     client.post('/api/playout',json={'action':'disconnect'})
     assert client.post('/api/configuration/import',json=cfg).status_code==400
@@ -215,3 +230,45 @@ def test_resource_portability_and_invalid_actions(harness):
     assert client.post('/api/resources/import',json=exported).status_code==200
     assert client.post('/api/resources',json={'kind':'automation','name':'Unsafe','payload':{'hook':'media.started','actions':[{'type':'shell','command':'no'}]}}).status_code==400
     assert client.post('/api/resources',json={'kind':'graphics','name':'Unsafe','payload':{'source':'remote','url':'http://example.com'}}).status_code==400
+
+
+def test_channel_groundwork_does_not_start_second_worker(harness):
+    client,_,_,_=harness
+    cfg=client.get('/api/settings').json()['channel']
+    result=client.post('/api/channels',json={'id':'backup','name':'Backup channel','config':cfg})
+    assert result.status_code==200,result.text
+    assert result.json()['active'] is False
+    assert len(client.get('/api/channels').json())==2
+    assert client.post('/api/channels',json={'id':'main','name':'Duplicate'}).status_code==409
+
+
+def test_recovery_cues_paused_remainder_and_expired_checkpoint_is_rejected(harness):
+    client,app,engine,root=harness
+    app.state.recovery.last_checkpoint=time.monotonic()+60
+    media=add_asset(app,root)
+    client.post('/api/playlists/main/items',json={'media_id':media})
+    item=client.get('/api/playlists/main').json()[0]
+    client.post('/api/playout',json={'action':'connect'})
+    with app.state.sessions() as db:
+        db.add(PlayoutSession(id='main',state='paused',snapshot={'item':item,'observation':{'position_seconds':3,'duration_seconds':10}}))
+        db.commit()
+    response=client.post('/api/recovery/resume')
+    assert response.status_code==200,response.text
+    assert engine.state=='paused' and engine.bounds==(75,250) and engine.position==3
+    client.post('/api/playout',json={'action':'stop'})
+    with app.state.sessions() as db:
+        row=db.get(PlayoutSession,'main');row.state='playing';row.updated_at=(datetime.now(timezone.utc)-timedelta(seconds=20)).isoformat();db.commit()
+    assert client.get('/api/recovery').json()['preview']['available'] is False
+    assert client.post('/api/recovery/resume').status_code==409
+
+
+def test_emergency_sequence_is_explicit_and_plugin_paths_are_scoped(harness):
+    client,app,engine,root=harness
+    media=add_asset(app,root)
+    seq=resource(client,'sequence',{'items':[{'kind':'media','reference':media}]})
+    assert client.put('/api/recovery',json={'emergency_sequence_id':seq}).status_code==200
+    client.post('/api/playout',json={'action':'connect'})
+    assert client.post('/api/recovery/emergency').status_code==200
+    assert engine.state=='playing'
+    app.state.events.load_plugins(['../outside.py'],root/'plugins')
+    assert app.state.events.plugin_status[-1]['state']=='error'

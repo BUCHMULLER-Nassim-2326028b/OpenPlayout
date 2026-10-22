@@ -35,6 +35,7 @@ class PlayoutController:
         self.events = None
         self.session_touched = False
         self.active_break_id = None
+        self.recovery_policy = "manual"
 
     def publish(self, hook: str, item: dict | None = None):
         if self.events:
@@ -53,6 +54,7 @@ class PlayoutController:
             if self.active_break_id and self.active_break_id != break_id:
                 self.publish("break.ended", {"break_id": self.active_break_id})
             if break_id and break_id != self.active_break_id:
+                self.publish("break.requested")
                 self.publish("break.started")
             self.active_break_id = break_id
         self.playback_confirmed = True
@@ -134,6 +136,8 @@ class PlayoutController:
             if upcoming.get("segment"):
                 try:
                     first, last = output_bounds(upcoming["segment"], self.fps)
+                    if Fraction(last - first, 1) / self.fps < 2:
+                        raise ValueError("Queued segments must last at least two seconds")
                 except ValueError as exc:
                     raise EngineError(str(exc)) from exc
                 await self.engine.preload_segment(clip, first, last, transition=upcoming.get("transition"))
@@ -226,21 +230,23 @@ class PlayoutController:
                     self.session_touched = True
                     if not self.observation.connected:
                         raise EngineError("Connect to CasparCG before playback")
-                    if action != "next":
-                        self.queue_override = sequence_items
                     if scheduled_item:
                         item = scheduled_item
                     elif action == "next":
                         item = self.following(self.current_id)
                     else:
-                        rows = self.rundown()
+                        rows = sequence_items if sequence_items is not None else self.stored_rundown()
                         item = next((r for r in rows if r["id"] == item_id), None) if item_id else (rows[0] if rows else None)
                     if item is None:
                         raise EngineError("No playable rundown item selected")
                     clip = self.clip(item)
                     bounds = output_bounds(item["segment"], self.fps) if item.get("segment") else None
                     if item["media"]["duration_seconds"] < 2:
-                        raise EngineError("Phase 1 rundown clips must be at least 2 seconds")
+                        raise EngineError("Rundown clips must be at least 2 seconds")
+                    if bounds and Fraction(bounds[1] - bounds[0], 1) / self.fps < 2:
+                        raise EngineError("Segments must be at least 2 seconds for reliable observation")
+                    if action != "next":
+                        self.queue_override = sequence_items
                     # Remove old AUTO producers before replacing the foreground.
                     await self.engine.stop()
                     self.history_end("skipped" if action == "next" else "replaced")
@@ -315,4 +321,4 @@ class PlayoutController:
             "current": current, "next": self.following(self.current_id),
             "automation": self.automation, "error": self.error,
             "connection_requested": self.enabled,
-            "recovery_policy": "manual", "monitor_available": False}
+            "recovery_policy": self.recovery_policy, "monitor_available": False}

@@ -41,7 +41,7 @@ class RecoveryService:
                 db.add(row)
             row.updated_at = utcnow()
             row.state = controller.observation.state
-            row.snapshot = {"item": controller.current_item(), "queue": controller.rundown() if controller.queue_override is not None else None,
+            row.snapshot = {"item": controller.current_item(), "queue": controller.rundown(),
                 "observation": controller.observation.to_dict()}
             db.commit()
 
@@ -61,6 +61,8 @@ class RecoveryService:
                 return {"available": False, "reason": "Expected source position has already passed OUT; completed footage will not be replayed"}
             first = int(source_position * fps)
             end = int(source_end * fps)
+            if end - first < 2 * fps:
+                return {"available": False, "reason": "Less than two seconds remain before OUT; below the reliable observation limit"}
             item["segment"] = {"id": "recovery", "media_id": item["media"]["id"], "label": "Recovered remainder", "in_frame": first, "out_frame": end, "fps_num": fps.numerator, "fps_den": fps.denominator}
             item["id"] = "recovery-" + str(uuid4())
             item["recovery"] = True

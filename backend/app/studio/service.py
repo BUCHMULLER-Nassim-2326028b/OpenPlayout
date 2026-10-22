@@ -43,6 +43,8 @@ class StudioService:
             else:
                 raise ValueError("Only sequences, rules and break templates generate playout plans")
             for position, item in enumerate(result["items"]):
+                if item["duration_frames"] < fps * 2:
+                    raise ValueError("Each planned item must last at least two seconds for reliable observation")
                 self.controller().clip(item)
                 CasparCGEngine.transition_args(item.get("transition"))
                 item["id"], item["position"] = f"studio-{resource_id}-{position}-{uuid4()}", position

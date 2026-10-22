@@ -37,6 +37,8 @@ resolution is recorded in `backend/requirements.lock`. Frontend uses
 `python -m pip install -r backend/requirements.lock` then
 `python -m pip install --no-deps -e backend` inside the environment.
 
-No third-party plugin execution is implemented. Future Python plugins will be
-trusted code unless an actual sandbox is added. Keep media scanning read-only;
+Opt-in plugins in plugins/ are trusted Python code. The event SDK is documented
+in graphics-and-plugins.md; callbacks are queued, timed and audited, not sandboxed.
+Alembic 0003 adds chapters, segments, collections, documents, graphics instances,
+event audits and observed playback checkpoints. Keep media scanning read-only;
 write derived application metadata to SQLite, never to source media.

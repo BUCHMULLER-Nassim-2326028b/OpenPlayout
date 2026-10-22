@@ -17,6 +17,13 @@ class CollectionInput(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     media_ids: list[str] = Field(default_factory=list, max_length=2000)
     query: dict = Field(default_factory=dict)
+    weights: dict[str, int] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_weights(self):
+        if any(key not in self.media_ids or not 1 <= value <= 1000 for key, value in self.weights.items()):
+            raise ValueError("Weights must reference selected media and be between 1 and 1000")
+        return self
 
 
 class RuleConfig(BaseModel):

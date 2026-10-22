@@ -5,10 +5,11 @@ export interface Media {
   metadata: { fps?: string; width?: number; height?: number; video_codec?: string; audio_codec?: string;
     possible_vfr?: boolean; chapters?: unknown[]; duration?: string };
 }
-export interface Item { id: string; position: number; media: Media }
+export interface Item { id: string; position: number; media: Media; segment?: {label:string;in_frame:number;out_frame:number;fps_num:number;fps_den:number} | null }
 export interface Status {
   engine: string; automation: boolean; error: string | null; connection_requested: boolean;
-  observation: { connected: boolean; state: string; clip: string | null; position_seconds: number | null; duration_seconds: number | null };
+  observation: { connected: boolean; state: string; clip: string | null; position_seconds: number | null; duration_seconds: number | null; clip_in_seconds?:number;clip_duration_seconds?:number|null };
+  recovery_policy?: string;
   current: Item | null; next: Item | null;
   runtime?: {state: string; managed: boolean; pid: number | null; version: string | null; error: string | null};
   scheduler?: {armed_schedule_id: string | null; active_execution_id: string | null; error: string | null;

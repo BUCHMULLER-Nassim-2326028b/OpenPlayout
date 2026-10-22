@@ -110,6 +110,8 @@ def make_router(sessions, get_controller, get_runner, read_settings):
                 schedule = Schedule(**body.model_dump())
                 db.add(schedule)
                 db.commit()
+                if get_controller().events:
+                    get_controller().events.publish("schedule.created", {"schedule_id": schedule.id})
                 return {"id": schedule.id}
 
     @router.post("/resolve-time")

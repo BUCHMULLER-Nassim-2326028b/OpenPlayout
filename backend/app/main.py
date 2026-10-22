@@ -103,6 +103,7 @@ def create_app(settings: Settings | None = None, engine_factory=None) -> FastAPI
         app.state.scheduler = ScheduleRunner(sessions, app.state.controller, settings.scheduler_lateness_seconds)
         app.state.scheduler.recover()
         app.state.controller.events = events
+        app.state.controller.recovery_policy = recovery.config().policy
         events.load_plugins(settings.trusted_plugins, ROOT / "plugins")
         events.subscribe("playback.error", studio.emergency_hook)
         try:
@@ -111,7 +112,11 @@ def create_app(settings: Settings | None = None, engine_factory=None) -> FastAPI
                 if runtime.state in ("running", "external"):
                     await app.state.controller.action("connect")
                     if recovery.config().policy == "resume_expected" and recovery.preview()["available"] and app.state.controller.observation.state in ("stopped", "ended"):
-                        await recovery.resume()
+                        try:
+                            await recovery.resume()
+                        except (ValueError, RuntimeError, OSError) as exc:
+                            app.state.controller.error = "Automatic recovery failed: " + str(exc)
+                            logger.exception("automatic_recovery_failed")
         except BaseException:
             await app.state.controller.engine.disconnect()
             await runtime.stop()

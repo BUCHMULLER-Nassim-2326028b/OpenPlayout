@@ -33,6 +33,13 @@ class ConfigImport(BaseModel):
     confirm_replace_settings: bool = False
 
 
+class InactiveChannelInput(BaseModel):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,39}$")
+    name: str = Field(min_length=1, max_length=120)
+    timezone: str = "Europe/Paris"
+    config: dict = Field(default_factory=dict)
+
+
 def router(service, graphics, events, recovery, settings, save_settings):
     api = APIRouter(prefix="/api", tags=["Automation studio"])
     sessions = service.sessions
@@ -230,6 +237,7 @@ def router(service, graphics, events, recovery, settings, save_settings):
                 db.add(row)
             row.value = body.model_dump()
             db.commit()
+        service.controller().recovery_policy = body.policy
         return {"saved": True}
 
     @api.post("/recovery/resume")
@@ -286,5 +294,16 @@ def router(service, graphics, events, recovery, settings, save_settings):
     def channels():
         with sessions() as db:
             return [{"id": row.id, "name": row.name, "timezone": row.timezone, "active": row.id == "main"} for row in db.scalars(select(Channel))]
+
+    @api.post("/channels")
+    def add_inactive_channel(body: InactiveChannelInput):
+        from ..schemas import ChannelSettings
+        cfg = ChannelSettings.model_validate(body.config | {"name": body.name, "timezone": body.timezone})
+        with sessions() as db:
+            if db.get(Channel, body.id):
+                raise HTTPException(409, "Channel ID already exists")
+            db.add(Channel(id=body.id, name=cfg.name, timezone=cfg.timezone, fps_num=cfg.fps_num, fps_den=cfg.fps_den, width=cfg.width, height=cfg.height, config=cfg.model_dump()))
+            db.commit()
+        return {"id": body.id, "active": False, "note": "Stored configuration only; no second output worker is started"}
 
     return api

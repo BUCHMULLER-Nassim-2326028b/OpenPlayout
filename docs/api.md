@@ -54,5 +54,43 @@ while armed. Execution preserves the operator rundown. See [scheduler policies](
 
 Services bind to localhost by default. To deliberately deploy on a network, use
 an authenticated TLS reverse proxy and an explicit `OPENPLAYOUT_ORIGINS` allowlist;
-all clients still need the token. There is no public file serving, arbitrary AMCP
-execution or remote graphics bridge.
+control clients still need the token. Graphics render/context routes use read-only
+instance capabilities. Source preview uses an authenticated asset-scoped cookie.
+There is no arbitrary path/file read or arbitrary AMCP execution endpoint.
+
+## Chapters, automation and operations
+
+All routes below require the bearer token except the two scoped display routes.
+Schemas and request examples are available in the running `/docs` OpenAPI UI.
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET/POST | `/api/media/{id}/chapters` | Embedded/custom chapters and virtual segments; create chapter |
+| PUT/DELETE | `/api/chapters/{id}` | Edit/delete chapter metadata |
+| POST | `/api/media/{id}/chapters/import` | Import embedded chapters into application metadata |
+| GET | `/api/segments` | List virtual segments |
+| POST | `/api/media/{id}/segments` | Save integer-frame IN/OUT |
+| POST | `/api/segments/{id}/preview` | Play segment on actual program output |
+| POST | `/api/media/{id}/preview-session` | Issue asset-scoped preview cookie |
+| GET | `/api/media/{id}/content` | Range-capable indexed source; scoped cookie required |
+| GET/POST | `/api/collections` | Ordered media or smart tag query; optional per-ID weights 1–1000 |
+| PUT | `/api/media/{id}/tags` | Application title/tags |
+| GET/POST | `/api/resources` | Versioned rule/break/sequence/graphics/automation documents |
+| PUT/DELETE | `/api/resources/{id}` | Edit/delete unused templates |
+| GET | `/api/resources/{id}/export` | Portable JSON document |
+| POST | `/api/resources/import` | Import document as new ID |
+| POST | `/api/resources/{id}/preview` | Expand, fit and preflight without changing output |
+| POST | `/api/resources/{id}/run` | Explicit program execution, optional preview signature |
+| POST | `/api/resources/{id}/schedule` | Validate and create a disarmed timed schedule |
+| GET/POST | `/api/graphics` | List/create graphics instances |
+| POST | `/api/graphics/{id}` | show/hide/variables, isolated from program connection |
+| GET | `/api/graphics/{id}/preview` | Read-only display URL |
+| GET | `/graphics/render/{id}` and `/context` | HTML/context with instance key, no control privilege |
+| GET | `/api/automation/events`, `/api/diagnostics` | Audit and operator diagnostics |
+| GET/PUT | `/api/recovery` | Checkpoint preview and explicit policies |
+| POST | `/api/recovery/resume`, `/api/recovery/emergency` | Recover idle output / take emergency sequence |
+| POST | `/api/backups` | Create consistent SQLite ZIP |
+| GET | `/api/backups/{id}` | Authenticated backup download |
+| GET | `/api/configuration/export` | Portable channel/recovery settings, no API token |
+| POST | `/api/configuration/import` | Validate/replace settings with confirm_replace_settings=true |
+| GET/POST | `/api/channels` | Main and inactive channel configurations; no second worker |

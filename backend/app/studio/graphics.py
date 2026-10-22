@@ -56,6 +56,8 @@ class GraphicsService:
                     raise ValueError("Unknown graphics instance")
                 if row.layer <= cfg.layer:
                     raise ValueError("Graphics layers must be above the program layer")
+                if db.scalar(select(GraphicsInstance.id).where(GraphicsInstance.layer == row.layer, GraphicsInstance.id != row.id, GraphicsInstance.state == "active")):
+                    raise ValueError("Another graphics instance owns this layer; hide it first")
                 template = document(db, row.template_id, "graphics")
                 GraphicsConfig.model_validate(template.payload)
                 if parameters:

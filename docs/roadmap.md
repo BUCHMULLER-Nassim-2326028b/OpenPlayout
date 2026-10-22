@@ -38,8 +38,7 @@ Schedules are one-time explicit events across any dates. Timing is software-base
 not frame-certified. No files are converted, split or overwritten. See
 [scheduler.md](scheduler.md) for operator instructions and limitations.
 
-Next implementation step: editable chapters and virtual segments (Phase 3), with
-measured engine boundary tests before claiming precise break/resume playback.
+Phases 3–6 are implemented in the working milestones below.
 
 ## Bundled server milestone — 2026-10-22
 
@@ -79,10 +78,56 @@ runtime, and the first Phase 2 milestone is implemented above. Physical output
 inspection and transition measurements remain open. File inventory and validation notes are
 in [validation.md](validation.md).
 
-## Remaining milestones
+## Phase 3 — verified native segment / break / resume
 
-2. Scheduling follow-up: weekly recurrence, reusable timed sequences and native preloading.
-3. Chapters: editable boundaries, integer-frame segments, break/resume.
-4. Rules: deterministic fitting, grouping, cooldowns and break templates.
-5. Graphics: HTML layer management and dynamic NOW/NEXT context.
-6. Templates, trusted plugin SDK, recovery policies and multichannel operations.
+- [x] Alembic 0003 preserves existing data while adding studio models
+- [x] Chapter metadata import, editor, notes and targeted automation markers
+- [x] Scoped browser source preview, Range requests and frame IN/OUT controls
+- [x] Virtual segments, rational frame conversion and bounded seek
+- [x] Native CasparCG PLAY/LOAD/LOADBG SEEK/LENGTH and segment-aware INFO identity
+- [x] Real 0–3 s segment → blue bumper → 3–6 s segment; source hash unchanged
+- [x] Output PNG inspection confirms red before / green after the break
+- [ ] Frame/audio continuity measurement on target broadcast hardware
+
+## Phase 4 — rules and break automation
+
+- [x] Ordered and smart collections, tags and API weights
+- [x] Rule editor, seeded policies, priorities, history cooldown and daily limits
+- [x] Required/optional staged breaks, duplicate avoidance and automatic fillers
+- [x] Integer-frame bounded search, strict fit and explicit impossible-fit errors
+- [x] Repeated two-item groups with an interstitial break fit a 50-second hard deadline
+- [x] Generate, review and create a new disarmed timed schedule from a template
+- [x] Native sequence execution with source/preview revalidation
+- [x] Playback history shared by full media and its segments
+- [ ] Weekly recurrence and unlimited large-library optimization remain follow-up work
+
+## Phase 5 — real HTML graphics compositing verified
+
+- [x] Builtin logo, lower third, NOW/NEXT and countdown
+- [x] Custom HTML, local file and remote HTTPS bridge with hide/freeze policy
+- [x] Graphics instance/layer controls, themes and dynamic variables
+- [x] Separate engine connection, observed NOW/NEXT context and graphics hooks
+- [x] Real CEF producer and output IMAGE capture: logo and NEXT over program
+- [x] Inspected screenshots show NEXT updates across program progression
+- [ ] Device-specific output and third-party remote overlay compatibility checks
+
+## Phase 6 — extended automation and recovery groundwork
+
+- [x] Versioned reusable nested templates, conditions, transitions and cycle checks
+- [x] Event actions, bounded asynchronous hooks, audit log and operator diagnostics
+- [x] Opt-in trusted Python plugin SDK/example, timeout/error isolation and path checks
+- [x] Channel-scoped records and inactive channel configurations
+- [x] Observed checkpoints, expected-position/paused recovery, explicit emergency policy
+- [x] Configuration/template JSON portability and checked online SQLite backup
+- [x] Offline restore tool preserves old database and validates archive/SQLite integrity
+- [x] Automated backup → offline restore → restored library/rundown check
+- [x] Final combined run: 57 passed / 2 optional adapter tests skipped; production build and real Chrome acceptance pass
+- [ ] Simultaneous independent channel workers and redundant-server failover
+- [ ] Long-running 24/7 soak, output precision and disaster-recovery rehearsals on target system
+
+The phases have working implementations and the concrete acceptance paths above;
+this does not certify a finished 24/7 broadcast appliance. Shorter-than-two-second
+items and identical adjacent full producers remain outside reliable observation.
+Recovery defaults to manual. Native cut sequences are tested; dissolve continuity
+and arbitrary remote pages require their own output checks. Physical signal output
+has not been certified. See automation.md and graphics-and-plugins.md.

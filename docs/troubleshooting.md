@@ -34,14 +34,16 @@ and layer, and check server logs. The control UI has no video return and cannot
 prove that a physical consumer is functioning.
 
 **Lost connection / failed preload:** automation is suspended; already loaded
-server content may continue. No automatic skip or emergency filler occurs. Inspect
+server content may continue. The default policy suspends; only an explicitly
+configured emergency sequence may take over. Inspect
 the output, reconnect, Stop to clear the layer, then Cue/Resume or select playback.
 Stop intentionally clears foreground and background of the program layer only.
 
 **Restart:** library/settings/rundown persist. The bundled server and control
-connection start automatically, while media playback is never restarted
-automatically. Unfinished history records are marked interrupted with unknown end
-times. This is a manual playback recovery policy, not schedule-position recovery.
+connection start automatically. Manual recovery is the default; Operations can
+explicitly enable expected-position recovery on idle output. Unfinished history
+records are marked interrupted with unknown end times. Scheduled events are not
+blindly replayed. A past OUT or remainder below two seconds is not resumed.
 Graceful application shutdown closes its owned server. See [runtime lifecycle](casparcg-runtime.md).
 
 **401 / WebSocket rejected:** use the token in `data/api-token`, the root `.env`
@@ -53,3 +55,18 @@ also prints startup/request errors in the terminal. Settings backups are under
 `data/backups`; restore through the settings API after reviewing their contents.
 For a full backup, stop OpenPlayout and copy the entire data directory. Never copy
 only the SQLite main file from a running WAL database.
+
+**Invisible HTML graphics:** verify a layer above program, a reachable
+OPENPLAYOUT_GRAPHICS_BASE_URL, and instance error state. Show acknowledges AMCP;
+check actual output separately. Remote pages must acknowledge context messages
+or use the explicitly chosen freeze policy. For custom assets, place HTML in
+data/graphics. See graphics-and-plugins.md.
+
+**No exact rule/break fit:** inspect cooldown/history, required stages, group sizes,
+minimum/maximum duration and available filler. The engine does not truncate media
+or omit required stages. Reduce collection size if the bounded search limit is hit.
+
+**Restore fails:** stop all OpenPlayout instances and database viewers; use the
+generated ZIP with scripts/restore-backup.ps1 -Archive PATH -ConfirmStopped. The
+tool refuses unexpected ZIP members, failed integrity checks and live WAL/SHM
+sidecars. It retains the previous main database under before-restore-*.sqlite.

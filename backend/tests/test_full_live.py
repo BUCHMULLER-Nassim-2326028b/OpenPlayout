@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import socket
 import time
 from uuid import uuid4
 
@@ -23,7 +24,10 @@ def test_full_index_rundown_auto_and_restart():
     bundle = ROOT / ".tools" / "casparcg" / "2.5.1"
     for color in ("red", "blue"):
         subprocess.run([str(bundle / "ffmpeg.exe"), "-v", "error", "-nostdin", "-n", "-f", "lavfi", "-i", f"color=c={color}:s=320x180:r=25", "-t", "3", "-c:v", "mpeg4", str(media / f"{color}.mp4")], check=True)
-    cfg = Settings(data_dir=workspace / "data", caspar_port=5265, caspar_media_root=str(media), caspar_autostart=True)
+    with socket.socket() as listener:
+        listener.bind(('127.0.0.1', 0))
+        port = listener.getsockname()[1]
+    cfg = Settings(data_dir=workspace / "data", caspar_port=port, caspar_media_root=str(media), caspar_autostart=True)
     app = create_app(cfg)
     samples = []
     with TestClient(app) as client:

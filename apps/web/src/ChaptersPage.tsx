@@ -13,7 +13,7 @@ export default function ChaptersPage() {
   const chapters=useQuery({queryKey:['chapters',asset],enabled:!!asset,queryFn:()=>api<{chapters:Boundary[];segments:Boundary[];embedded:unknown[]}>(`/media/${asset}/chapters`)});
   async function work(fn:()=>Promise<unknown>) {setBusy(true);setError('');setNotice('');try{await fn();await cache.invalidateQueries({queryKey:['chapters',asset]});}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   function seek(frame:number){if(video.current){video.current.currentTime=Math.max(0,frame/fps);setPosition(frame);}}
-  async function select(id:string){setAsset(id);setUrl('');setEditing('');await work(async()=>setUrl((await api<{url:string}>(`/media/${id}/preview-session`,'POST')).url));}
+  async function select(id:string){setAsset(id);setUrl('');setEditing('');if(id)await work(async()=>setUrl((await api<{url:string}>(`/media/${id}/preview-session`,'POST')).url));}
   const body={label,in_frame:first,out_frame:last,fps_num:cfg?.fps_num||25,fps_den:cfg?.fps_den||1,notes,triggers:triggers.split(',').map(s=>s.trim()).filter(Boolean)};
   return <><div className="page-heading"><div><p className="eyebrow">SOURCE EDITING</p><h1>Chapters & virtual segments</h1></div></div>
     {error&&<p className="error" role="alert">{error}</p>}{notice&&<p className="success" role="status">{notice}</p>}

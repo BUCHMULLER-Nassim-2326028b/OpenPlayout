@@ -123,7 +123,10 @@ def router(sessions, controller, runner, read_settings, settings, authorize):
                 cfg = read_settings()
                 item = media_item(db, row.media_id, row.id, Fraction(cfg.fps_num, cfg.fps_den))
                 item["id"] = "segment-" + row.id
-            await controller().action("play", sequence_items=[item])
+            try:
+                await controller().action("play", sequence_items=[item])
+            except (RuntimeError, OSError) as exc:
+                raise HTTPException(409, str(exc)) from exc
             return controller().status()
 
     @api.post("/api/media/{media_id}/preview-session", dependencies=[authorize])
@@ -169,7 +172,7 @@ def router(sessions, controller, runner, read_settings, settings, authorize):
             db.add(row)
             db.flush()
             for position, media_id in enumerate(body.media_ids):
-                db.add(CollectionItem(collection_id=row.id, media_id=media_id, position=position))
+                db.add(CollectionItem(collection_id=row.id, media_id=media_id, position=position, weight=body.weights.get(media_id, 1)))
             db.commit()
             return {"id": row.id}
 

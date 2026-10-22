@@ -2,8 +2,9 @@
 
 Local broadcast automation foundation for Windows 11. FastAPI + SQLite control a
 real CasparCG AMCP connection; React provides a persistent media library and
-sequential rundown. The Phase 1 application path has been tested against real
-CasparCG; Phase 2 adds one-time hard/soft schedules and explicit timed execution.
+sequential rundown, hard/soft schedules, chapters and virtual segments, rules,
+breaks, nested templates, HTML graphics, trusted plugins and recovery controls.
+Segment/break/resume and logo/NOW-NEXT compositing have been verified on real CasparCG.
 Physical output quality remains an operator check. This is not a finished 24/7 product.
 
 ## Start on this workspace
@@ -88,13 +89,40 @@ CSV or JSON and explicitly arm playback. Opening/editing never arms it. Hard
 events reserve fixed times; soft events move within a configured window. See the
 [scheduler guide](docs/scheduler.md) for the software dispatch tolerance and limits.
 
-Limits: no recurring/weekly schedule generation, editable chapters/segments, graphics UI, breaks, collections,
-plugins, emergency playlists, remote relay or video return yet. Images/audio can
+Open **Chapters & segments** to edit application chapter metadata and define IN/OUT
+without modifying the original. In **Automation studio**, build collections, break
+templates and rules, preview an exact fit against a deadline, then create a timed
+schedule or run a native sequence. Saved sequences can nest media, segments,
+breaks and graphics actions. Add a logo and NOW/NEXT template under Graphics,
+create instances on different layers above program, and show them on output.
+**Operations** exposes recovery policies, emergency sequences, backups and diagnostics.
+See [chapters](docs/media-segments.md), [automation](docs/automation.md) and
+[graphics and plugin SDK](docs/graphics-and-plugins.md).
+
+Limits: no recurring/weekly schedule generation, remote relay or video return yet.
+Additional channels can store configurations; only main has an output worker. Images/audio can
 be indexed but cannot enter automatic playback. Indexing is explicit via Scan;
 filesystem watchers are deferred. Editing the rundown requires Stop. Adjacent
 identical clips and clips shorter than two seconds are rejected. Output compatibility,
 INFO variants, end-of-file behavior and gap-free transitions require testing on the
 chosen CasparCG build. There is no frame-accuracy certification.
+
+Database restoration is offline and preserves the replaced database:
+
+```powershell
+.\scripts\restore-backup.ps1 -Archive 'C:\Backups\openplayout.zip' -ConfirmStopped
+```
+
+The backup contains SQLite metadata, not source media, the API token or plugin
+code. Keep original media paths accessible or revise/re-index after moving a setup.
+
+Real phases 3–6 acceptance (isolated generated media, real CEF graphics, Chrome):
+
+```powershell
+$env:OPENPLAYOUT_TEST_STUDIO='1'
+.tools\backend-venv\Scripts\python.exe -m pytest backend/tests/test_studio_live.py -q -s -p no:cacheprovider
+Remove-Item Env:OPENPLAYOUT_TEST_STUDIO
+```
 
 ## Development and tests
 

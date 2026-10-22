@@ -1,4 +1,44 @@
-# Phase 1 delivery record — 2026-10-22
+# Delivery and validation record — 2026-10-22
+
+## Phases 3–6
+
+Final combined run: **57 passed, 2 skipped**, including the full real application
+and real studio/Chrome acceptance; the two external adapter-only tests remain opt-in.
+The standard isolated suite has 55 passing tests. TypeScript and Vite production
+build pass. New tests cover chapter/segment bounds and unchanged sources,
+asset-scoped Range preview, segment/break/resume, cycles, exact repeated-group fit
+with breaks and hard deadline, disarmed schedule creation, fillers/cooldowns,
+stale preview refusal, dynamic graphics context/hooks, plugin failure isolation,
+expected/paused recovery, emergency actions, inactive channels, configuration
+round trip, online SQLite integrity and actual offline ZIP restoration.
+
+Real CasparCG 2.5.1 acceptance used fresh generated media and an isolated database,
+private AMCP/HTTP ports, the actual CEF HTML producer and channel IMAGE output
+captures. A 10-second source played 0–3 s, a three-second bumper, then 3–6 s.
+INFO confirmed the resumed source bounds. SHA-256 confirmed no source writes.
+PNG inspection showed a composited logo and NOW/NEXT, red source before and green
+after the break, and NEXT updated to empty at the final segment. These are real
+server output captures, not browser simulations. Reference successful artifacts:
+`.tools/studio-acceptance/ee6ab041-23b1-4279-a6ff-b4d6e50258cb/` (ignored local files).
+
+Chrome checked chapter creation, saved sequence expansion, HTML bridge rendering
+and diagnostics. The extended suite additionally exercises collection creation,
+strict rule fitting and disarmed schedule creation through the UI. It uses only
+isolated synthetic assets. Scripts: test_studio_live.py and studio-smoke.mjs.
+
+The final combined run uses a fresh project-local --basetemp under .tools/test-runs.
+An earlier elevated run hit Windows permissions on the system pytest Temp parent;
+re-running with the isolated project path resolved all fixture setup errors.
+
+Material limits: no physical SDI/HDMI certification, audio/gap measurement,
+frame-accuracy certification, multichannel workers, redundant-server failover or
+24/7 soak. Remote HTML services and native dissolves need target-specific checks.
+The Starlette TestClient HTTPX deprecation warning is upstream and non-failing.
+
+Changed areas: backend models/migration 0003, segment-aware adapter/controller,
+studio services/API, recovery/events/graphics, React Chapters/Studio pages, browser
+and backend acceptance tests, offline restore scripts, plugin example and guides.
+The original phase records below are retained as historical evidence.
 
 ## Full application acceptance and first scheduling milestone
 
